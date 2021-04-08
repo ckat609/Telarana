@@ -2,7 +2,6 @@ import bpy
 import random
 import math
 import numpy
-
 from functools import reduce
 
 
@@ -26,7 +25,8 @@ def addThread(roots, segments=5):
     v2 = numpy.array(roots['p2'])
     v3 = v2-v1
 
-    d = math.pow(math.pow(v2[0] - v1[0], 2) + math.pow(v2[1] - v1[1], 2) + math.pow(v2[2] - v1[2], 2), 0.5)
+    d = math.pow(math.pow(v2[0] - v1[0], 2) + math.pow(v2[1] -
+                 v1[1], 2) + math.pow(v2[2] - v1[2], 2), 0.5)
     p = v3/d
 
     for i in range(vCount):
@@ -38,21 +38,21 @@ def addThread(roots, segments=5):
         if(i < lastVert):
             edges.append((i, i+1))
 
-    return {'verts': verts, 'edges': [], 'pins': []}
+    return {'verts': verts, 'edges': edges, 'pins': []}
 
 
 def makePins(thread):
     return [0, len(thread['verts'])-1]
 
 
-def processThreads(thread1, thread2):
-    verts = thread1['verts'] + thread2['verts']
-    l = len(thread1['verts'])
+def processThreads(acc, thread):
+    verts = acc['verts'] + thread['verts']
+    l = len(acc['verts'])
 
-    edges = [(edge[0]+l, edge[1]+l) for edge in thread2['edges']]
-    pins = [n+l for n in thread2['pins']]
+    edges = [(edge[0]+l, edge[1]+l) for edge in thread['edges']]
+    pins = [n+l for n in thread['pins']]
 
-    return {'verts': verts, 'edges': thread1['edges'] + edges, 'pins': thread1['pins'] + pins}
+    return {'verts': verts, 'edges': acc['edges'] + edges, 'pins': acc['pins'] + pins}
 
 
 class CreateTelaranaOperator(bpy.types.Operator):
@@ -60,10 +60,10 @@ class CreateTelaranaOperator(bpy.types.Operator):
     bl_label = "Create Telarana"
 
     def execute(self, context):
-        THREAD_COUNT = 10
+        THREAD_COUNT = 15
         THREAD_CONNECTIONS = 50
-        THREAD_STEPS = 5
-        THREAD_CONNECTION_STEPS = 3
+        THREAD_STEPS = 15
+        THREAD_CONNECTION_STEPS = 5
 
         mainThreads = []
         connectedThreads = []
@@ -89,7 +89,8 @@ class CreateTelaranaOperator(bpy.types.Operator):
             connectedThreads.append(cThread)
 
         allThreads = mainThreads + connectedThreads
-        mesh = reduce(processThreads, allThreads, {'verts': [], 'edges': [], 'pins': []})
+        mesh = reduce(processThreads, allThreads, {
+                      'verts': [], 'edges': [], 'pins': []})
 
         meshTelarana = bpy.data.meshes.new("Telarana")
         objTelarana = bpy.data.objects.new("Telarana", meshTelarana)
