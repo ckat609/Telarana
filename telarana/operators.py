@@ -3,7 +3,6 @@ import random
 import math
 import numpy
 from functools import reduce
-# test
 
 
 def getThreadRoots(strokes):
