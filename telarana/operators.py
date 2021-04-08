@@ -6,6 +6,7 @@ from functools import reduce
 
 
 def getThreadRoots(strokes):
+    # type test
     s1, s2 = random.sample(list(strokes), k=2)
 
     p1 = random.choice(list(s1.points))
