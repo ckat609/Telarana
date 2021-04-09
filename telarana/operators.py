@@ -79,19 +79,54 @@ def processThreads(acc, thread):
     return {'verts': verts, 'edges': acc['edges'] + edges, 'pins': acc['pins'] + pins}
 
 
+def createConnectingThreads(threads, threadCount, threadSteps):
+    connectedThreads = []
+
+    for j in range(threadCount):
+        l1, l2 = random.sample(threads, k=2)
+
+        randVert1 = random.randrange(1, len(l1['verts']) - 1)
+        randVert2 = random.randrange(1, len(l2['verts']) - 1)
+        p1 = l1['verts'][randVert1]
+        p2 = l2['verts'][randVert2]
+
+        cThread = addThread({'p1': p1, 'p2': p2}, threadSteps)
+        connectedThreads.append(cThread)
+
+    return connectedThreads
+
+
+def createThreadsRecursively(threads, threadCount, threadSteps, count):
+    if(count <= 0):
+        return threads
+
+    newThreads = threads + createConnectingThreads(threads, threadCount, threadSteps)
+
+    return createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
+
+
+def createThreadsRecursivelyWill(threads, threadCount, threadSteps, count):
+    if(count <= 0):
+        return threads
+
+    newThreads = createConnectingThreads(threads, threadCount, threadSteps)
+
+    return threads + createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
+
+
 class CreateTelaranaOperator(bpy.types.Operator):
     bl_idname = "object.create_telarana"
     bl_label = "Create Telarana"
 
     def execute(self, context):
-        THREAD_COUNT = 150
-        THREAD_STEPS = 20
-        THREAD_CONNECTIONS_COUNT = 100
+        THREAD_COUNT = 5
+        THREAD_STEPS = 10
+        THREAD_CONNECTIONS_COUNT = 5
         THREAD_CONNECTIONS_STEPS = 10
+        RECURSION_LEVELS = 100
 
         mainThreads = []
         connectedThreads = []
-        cconnectedThreads = []
 
         layers = bpy.context.scene.grease_pencil.layers
         strokes = layers.active.active_frame.strokes
@@ -102,29 +137,9 @@ class CreateTelaranaOperator(bpy.types.Operator):
             mThread['pins'] = makePins(mThread)
             mainThreads.append(mThread)
 
-        for j in range(THREAD_CONNECTIONS_COUNT):
-            l1, l2 = random.sample(mainThreads, k=2)
+        connectedThreads = createThreadsRecursivelyWill(mainThreads, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
 
-            randVert1 = random.randrange(1, len(l1['verts']) - 1)
-            randVert2 = random.randrange(1, len(l2['verts']) - 1)
-            p1 = l1['verts'][randVert1]
-            p2 = l2['verts'][randVert2]
-
-            cThread = addThread({'p1': p1, 'p2': p2}, THREAD_CONNECTIONS_STEPS)
-            connectedThreads.append(cThread)
-
-        for k in range(THREAD_CONNECTIONS_COUNT):
-            l1, l2 = random.sample(connectedThreads, k=2)
-
-            randVert1 = random.randrange(1, len(l1['verts']) - 1)
-            randVert2 = random.randrange(1, len(l2['verts']) - 1)
-            p1 = l1['verts'][randVert1]
-            p2 = l2['verts'][randVert2]
-
-            ccThread = addThread({'p1': p1, 'p2': p2}, THREAD_CONNECTIONS_STEPS)
-            cconnectedThreads.append(ccThread)
-
-        allThreads = mainThreads + connectedThreads + cconnectedThreads
+        allThreads = mainThreads + connectedThreads
         mesh = reduce(processThreads, allThreads, {'verts': [], 'edges': [], 'pins': []})
         connectedMesh = connectThreads(mesh)
 

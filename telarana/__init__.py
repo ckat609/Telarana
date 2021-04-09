@@ -11,23 +11,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from . import auto_load
 bl_info = {
-    "name" : "Telaraña",
-    "author" : "Armando Tello",
-    "description" : "",
-    "blender" : (2, 92, 0),
-    "version" : (0, 0, 1),
-    "location" : "",
-    "warning" : "",
-    "category" : "Generic"
+    "name": "Telaraña",
+    "author": "Armando Tello, Will Wright",
+    "description": "",
+    "blender": (2, 92, 0),
+    "version": (0, 0, 1),
+    "location": "",
+    "warning": "",
+    "category": "Generic"
 }
 
-from . import auto_load
 
 auto_load.init()
 
+
 def register():
     auto_load.register()
+
 
 def unregister():
     auto_load.unregister()
