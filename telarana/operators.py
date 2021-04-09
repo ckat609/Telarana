@@ -30,15 +30,14 @@ def addThread(roots, segments=5):
     p = v3/d
 
     for i in range(vCount):
-        vertCount = v1+(d*(i*subdivs)*p)
-        verts.append(tuple(vertCount))
-
         lastVert = vCount - 1
+
+        vertCount = v2 if i == lastVert else v1+(d*(i*subdivs)*p)
+        verts.append(tuple(vertCount))
 
         if(i < lastVert):
             edges.append((i, i+1))
-
-    return {'verts': verts, 'edges': [], 'pins': []}
+    return {'verts': verts, 'edges': edges, 'pins': []}
 
 
 def makePins(thread):
@@ -49,7 +48,33 @@ def processThreads(thread1, thread2):
     verts = thread1['verts'] + thread2['verts']
     l = len(thread1['verts'])
 
-    edges = [(edge[0]+l, edge[1]+l) for edge in thread2['edges']]
+    lt2 = len(thread2['edges'])-1
+    i = 0
+
+    # edges = [(edge[0]+l, edge[1]+l) for edge in thread2['edges']]
+    edges = []
+    for edge in thread2['edges']:
+        found1 = None
+        found2 = None
+
+        if i == 0:
+            try:
+                found1 = thread1['verts'].index(thread2['verts'][edge[0]])
+                # print(f"PASS1: {thread1['verts'][found1]} - {thread2['verts'][edge[0]]}")
+            except ValueError:
+                pass
+
+        if i == lt2:
+            print(f"{thread2['verts'][edge[1]]}")
+            try:
+                found2 = thread1['verts'].index(thread2['verts'][edge[1]])
+                print(f"PASS2: {thread1['verts'][found2]} - {thread2['verts'][edge[1]]}")
+            except ValueError:
+                pass
+
+        edges.append((found1 or edge[0]+l, found2 or edge[1]+l))
+        i += 1
+
     pins = [n+l for n in thread2['pins']]
 
     return {'verts': verts, 'edges': thread1['edges'] + edges, 'pins': thread1['pins'] + pins}
@@ -60,10 +85,10 @@ class CreateTelaranaOperator(bpy.types.Operator):
     bl_label = "Create Telarana"
 
     def execute(self, context):
-        THREAD_COUNT = 10
-        THREAD_CONNECTIONS = 50
-        THREAD_STEPS = 5
-        THREAD_CONNECTION_STEPS = 3
+        THREAD_COUNT = 150
+        THREAD_STEPS = 20
+        THREAD_CONNECTIONS_COUNT = 100
+        THREAD_CONNECTIONS_STEPS = 10
 
         mainThreads = []
         connectedThreads = []
@@ -77,7 +102,7 @@ class CreateTelaranaOperator(bpy.types.Operator):
             mThread['pins'] = makePins(mThread)
             mainThreads.append(mThread)
 
-        for j in range(THREAD_CONNECTIONS):
+        for j in range(THREAD_CONNECTIONS_COUNT):
             l1, l2 = random.sample(mainThreads, k=2)
 
             randVert1 = random.randrange(1, len(l1['verts']) - 1)
@@ -85,7 +110,7 @@ class CreateTelaranaOperator(bpy.types.Operator):
             p1 = l1['verts'][randVert1]
             p2 = l2['verts'][randVert2]
 
-            cThread = addThread({'p1': p1, 'p2': p2}, THREAD_CONNECTION_STEPS)
+            cThread = addThread({'p1': p1, 'p2': p2}, THREAD_CONNECTIONS_STEPS)
             connectedThreads.append(cThread)
 
         allThreads = mainThreads + connectedThreads
