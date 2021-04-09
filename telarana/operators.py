@@ -48,34 +48,31 @@ def processThreads(acc, thread):
     verts = acc['verts'] + thread['verts']
     l = len(acc['verts'])
 
-    lt2 = len(thread2['edges'])-1
+    lt2 = len(thread['edges'])-1
     i = 0
 
     # edges = [(edge[0]+l, edge[1]+l) for edge in thread2['edges']]
     edges = []
-    for edge in thread2['edges']:
+    for edge in thread['edges']:
         found1 = None
         found2 = None
 
         if i == 0:
             try:
-                found1 = thread1['verts'].index(thread2['verts'][edge[0]])
-                # print(f"PASS1: {thread1['verts'][found1]} - {thread2['verts'][edge[0]]}")
+                found1 = acc['verts'].index(thread['verts'][edge[0]])
             except ValueError:
                 pass
 
         if i == lt2:
-            print(f"{thread2['verts'][edge[1]]}")
             try:
-                found2 = thread1['verts'].index(thread2['verts'][edge[1]])
-                print(f"PASS2: {thread1['verts'][found2]} - {thread2['verts'][edge[1]]}")
+                found2 = acc['verts'].index(thread['verts'][edge[1]])
             except ValueError:
                 pass
 
         edges.append((found1 or edge[0]+l, found2 or edge[1]+l))
         i += 1
 
-    pins = [n+l for n in thread2['pins']]
+    pins = [n+l for n in thread['pins']]
 
     return {'verts': verts, 'edges': acc['edges'] + edges, 'pins': acc['pins'] + pins}
 
