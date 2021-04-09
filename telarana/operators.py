@@ -44,34 +44,36 @@ def makePins(thread):
     return [0, len(thread['verts'])-1]
 
 
+def connectThreads(mesh):
+    vertLookup = {}
+    outputVerts = []
+
+    for vert in mesh['verts']:
+        if vert not in vertLookup:
+            vertLookup[vert] = len(outputVerts)
+            outputVerts.append(vert)
+
+    outputEdges = []
+
+    for edge in mesh['edges']:
+        v1 = mesh['verts'][edge[0]]
+        v2 = mesh['verts'][edge[1]]
+        outputEdges.append((vertLookup[v1], vertLookup[v2]))
+
+    outputPins = []
+
+    for pin in mesh['pins']:
+        v = mesh['verts'][pin]
+        outputPins.append(vertLookup[v])
+
+    return {'verts': outputVerts, 'edges': outputEdges, 'pins': outputPins}
+
+
 def processThreads(acc, thread):
     verts = acc['verts'] + thread['verts']
     l = len(acc['verts'])
 
-    lt2 = len(thread['edges'])-1
-    i = 0
-
-    # edges = [(edge[0]+l, edge[1]+l) for edge in thread2['edges']]
-    edges = []
-    for edge in thread['edges']:
-        found1 = None
-        found2 = None
-
-        if i == 0:
-            try:
-                found1 = acc['verts'].index(thread['verts'][edge[0]])
-            except ValueError:
-                pass
-
-        if i == lt2:
-            try:
-                found2 = acc['verts'].index(thread['verts'][edge[1]])
-            except ValueError:
-                pass
-
-        edges.append((found1 or edge[0]+l, found2 or edge[1]+l))
-        i += 1
-
+    edges = [(edge[0]+l, edge[1]+l) for edge in thread['edges']]
     pins = [n+l for n in thread['pins']]
 
     return {'verts': verts, 'edges': acc['edges'] + edges, 'pins': acc['pins'] + pins}
@@ -89,6 +91,7 @@ class CreateTelaranaOperator(bpy.types.Operator):
 
         mainThreads = []
         connectedThreads = []
+        cconnectedThreads = []
 
         layers = bpy.context.scene.grease_pencil.layers
         strokes = layers.active.active_frame.strokes
@@ -110,9 +113,20 @@ class CreateTelaranaOperator(bpy.types.Operator):
             cThread = addThread({'p1': p1, 'p2': p2}, THREAD_CONNECTIONS_STEPS)
             connectedThreads.append(cThread)
 
-        allThreads = mainThreads + connectedThreads
-        mesh = reduce(processThreads, allThreads, {
-                      'verts': [], 'edges': [], 'pins': []})
+        for k in range(THREAD_CONNECTIONS_COUNT):
+            l1, l2 = random.sample(connectedThreads, k=2)
+
+            randVert1 = random.randrange(1, len(l1['verts']) - 1)
+            randVert2 = random.randrange(1, len(l2['verts']) - 1)
+            p1 = l1['verts'][randVert1]
+            p2 = l2['verts'][randVert2]
+
+            ccThread = addThread({'p1': p1, 'p2': p2}, THREAD_CONNECTIONS_STEPS)
+            cconnectedThreads.append(ccThread)
+
+        allThreads = mainThreads + connectedThreads + cconnectedThreads
+        mesh = reduce(processThreads, allThreads, {'verts': [], 'edges': [], 'pins': []})
+        connectedMesh = connectThreads(mesh)
 
         meshTelarana = bpy.data.meshes.new("Telarana")
         objTelarana = bpy.data.objects.new("Telarana", meshTelarana)
@@ -120,9 +134,9 @@ class CreateTelaranaOperator(bpy.types.Operator):
 
         objTelarana.vertex_groups.new(name='pins')
 
-        meshTelarana.from_pydata(mesh['verts'], mesh['edges'], [])
+        meshTelarana.from_pydata(connectedMesh['verts'], connectedMesh['edges'], [])
         meshTelarana.update()
 
-        objTelarana.vertex_groups['pins'].add(mesh['pins'], 1.0, 'ADD')
+        objTelarana.vertex_groups['pins'].add(connectedMesh['pins'], 1.0, 'ADD')
 
         return {'FINISHED'}
