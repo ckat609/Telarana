@@ -100,18 +100,19 @@ def createThreadsRecursively(threads, threadCount, threadSteps, count):
     if(count <= 0):
         return threads
 
-    newThreads = threads + createConnectingThreads(threads, threadCount, threadSteps)
-
-    return createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
-
-
-def createThreadsRecursivelyWill(threads, threadCount, threadSteps, count):
-    if(count <= 0):
-        return threads
-
     newThreads = createConnectingThreads(threads, threadCount, threadSteps)
 
     return threads + createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
+
+
+def createMainThreads(strokes, threadCount, threadSteps):
+    mainThreads = []
+    for i in range(threadCount):
+        threadRoots = getThreadRoots(strokes)
+        thread = addThread(threadRoots, threadSteps)
+        thread['pins'] = makePins(thread)
+        mainThreads.append(thread)
+    return mainThreads
 
 
 class CreateTelaranaOperator(bpy.types.Operator):
@@ -119,25 +120,17 @@ class CreateTelaranaOperator(bpy.types.Operator):
     bl_label = "Create Telarana"
 
     def execute(self, context):
-        THREAD_COUNT = 5
+        THREAD_COUNT = 15
         THREAD_STEPS = 10
-        THREAD_CONNECTIONS_COUNT = 5
+        THREAD_CONNECTIONS_COUNT = 50
         THREAD_CONNECTIONS_STEPS = 10
-        RECURSION_LEVELS = 100
-
-        mainThreads = []
-        connectedThreads = []
+        RECURSION_LEVELS = 5
 
         layers = bpy.context.scene.grease_pencil.layers
         strokes = layers.active.active_frame.strokes
 
-        for i in range(THREAD_COUNT):
-            threadRoots = getThreadRoots(strokes)
-            mThread = addThread(threadRoots, THREAD_STEPS)
-            mThread['pins'] = makePins(mThread)
-            mainThreads.append(mThread)
-
-        connectedThreads = createThreadsRecursivelyWill(mainThreads, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
+        mainThreads = createMainThreads(strokes, THREAD_COUNT, THREAD_STEPS)
+        connectedThreads = createThreadsRecursively(mainThreads, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
 
         allThreads = mainThreads + connectedThreads
         mesh = reduce(processThreads, allThreads, {'verts': [], 'edges': [], 'pins': []})
