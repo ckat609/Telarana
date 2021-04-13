@@ -10,8 +10,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import bpy
+from .operators import *
 
-from . import auto_load
 bl_info = {
     "name": "Telaraña",
     "author": "Armando Tello, Will Wright",
@@ -19,17 +20,28 @@ bl_info = {
     "blender": (2, 92, 0),
     "version": (0, 0, 1),
     "location": "",
+    "description": "Generates a cobweb using the current grease pencil layer strokes",
     "warning": "",
-    "category": "Generic"
+    "category": "Object"
 }
 
-
-auto_load.init()
+classesToRegisterUnregister = [
+    CreateTelaranaOperator,
+    VIEW3D_PT_CreateTelarana
+]
 
 
 def register():
-    auto_load.register()
+    for c in classesToRegisterUnregister:
+        print(c)
+        bpy.utils.register_class(c)
 
 
 def unregister():
-    auto_load.unregister()
+    for c in classesToRegisterUnregister:
+        print(c)
+        bpy.utils.unregister_class(c)
+
+
+if __name__ == "__main__":
+    register()

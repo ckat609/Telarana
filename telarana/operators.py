@@ -1,20 +1,21 @@
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import random
 import math
 import numpy
 from functools import reduce
-
-bl_info = {
-    "name": "Telaraña",
-    "author": "Armando Tello, Will Wright",
-    "description": "",
-    "blender": (2, 92, 0),
-    "version": (0, 0, 1),
-    "location": "",
-    "description": "Generates a cobweb using the current grease pencil layer strokes",
-    "warning": "",
-    "category": "Object"
-}
 
 
 def getThreadRoots(strokes):
@@ -97,7 +98,7 @@ def createConnectingThreads(threads, threadCount, threadSteps):
     for j in range(threadCount):
         l1, l2 = random.sample(threads, k=2)
 
-        firstLastVert = 1
+        firstLastVert = 0
         randVert1 = random.randrange(firstLastVert, len(l1['verts']) - firstLastVert)
         randVert2 = random.randrange(firstLastVert, len(l2['verts']) - firstLastVert)
         p1 = l1['verts'][randVert1]
@@ -109,15 +110,16 @@ def createConnectingThreads(threads, threadCount, threadSteps):
     return connectedThreads
 
 
-# def createThreadsRecursively(threads, threadCount, threadSteps, count):
-#     if(count <= 0):
-#         return threads
-
-#     newThreads = createConnectingThreads(threads, threadCount, threadSteps)
-
-#     return threads + createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
-
 def createThreadsRecursively(threads, threadCount, threadSteps, count):
+    if(count <= 0):
+        return threads
+
+    newThreads = threads + createConnectingThreads(threads, threadCount, threadSteps)
+
+    return createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
+
+
+def createThreadsRecursivelyWill(threads, threadCount, threadSteps, count):
     if(count <= 0):
         return threads
 
@@ -136,12 +138,12 @@ def createMainThreads(strokes, threadCount, threadSteps):
     return mainThreads
 
 
-def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, threadConnectionSteps, recursionsLevesl):
+def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, threadConnectionSteps, recursionsLevels):
     layers = bpy.context.scene.grease_pencil.layers
     strokes = layers.active.active_frame.strokes
 
     mainThreads = createMainThreads(strokes, threadCount, threadSteps)
-    connectedThreads = createThreadsRecursively(mainThreads, threadConnectionCount, threadConnectionSteps, recursionsLevesl)
+    connectedThreads = createThreadsRecursivelyWill(mainThreads, threadConnectionCount, threadConnectionSteps, recursionsLevels)
 
     allThreads = mainThreads + connectedThreads
     mesh = reduce(processThreads, allThreads, {'verts': [], 'edges': [], 'pins': []})
@@ -158,13 +160,16 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
 
     objTelarana.vertex_groups['pins'].add(connectedMesh['pins'], 1.0, 'ADD')
 
+    bpy.context.view_layer.objects.active = objTelarana
+    objTelarana.select_set(True)
+
     return objTelarana
 
 
 def addClothModifier(obj, shrink):
     mod = obj.modifiers.new('Telarana', 'CLOTH')
     mod.settings.vertex_group_mass = "pins"
-    mod.settings.shrink_min = shrink   # -0.3 --- 0.3
+    mod.settings.shrink_min = shrink
     mod.settings.bending_model = 'LINEAR'
 
     return mod
@@ -172,13 +177,14 @@ def addClothModifier(obj, shrink):
 
 def addMaterial(obj):
     mat = bpy.data.materials.get('Telarana')
-    print(mat)
+
     if mat is None:
         mat = bpy.data.materials.new('Telarana')
     obj.data.materials.append(mat)
 
+    mat.use_nodes = True
+
     if mat.node_tree.nodes.get('ShaderNodeBsdfTranslucent') is not None:
-        mat.use_nodes = True
         mat.node_tree.nodes.remove(mat.node_tree.nodes.get('Principled BSDF'))
         matOut = mat.node_tree.nodes.get('Material Output')
         translucent = mat.node_tree.nodes.new('ShaderNodeBsdfTranslucent')
@@ -193,32 +199,66 @@ class CreateTelaranaOperator(bpy.types.Operator):
     bl_label = "Create Telarana"
 
     def execute(self, context):
-        THREAD_COUNT = 10
-        THREAD_STEPS = 10
-        THREAD_CONNECTIONS_COUNT = 5
-        THREAD_CONNECTIONS_STEPS = 5
-        RECURSION_LEVELS = 100
+        cs = bpy.context.scene
+        THREAD_COUNT = cs.THREAD_COUNT
+        THREAD_STEPS = cs.THREAD_STEPS
+        THREAD_CONNECTIONS_COUNT = cs.THREAD_CONNECTIONS_COUNT
+        THREAD_CONNECTIONS_STEPS = cs.THREAD_CONNECTIONS_STEPS
+        RECURSION_LEVELS = cs.RECURSION_LEVELS
 
-        SHRINK_FACTOR = 0.3
-        BEVEL_DEPTH = 0.0003
+        SHRINK_FACTOR = cs.SHRINK_FACTOR*0.3
+        BEVEL_DEPTH = cs.BEVEL_DEPTH/1000000
 
         obj = createTelaranaObject(THREAD_COUNT, THREAD_STEPS, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
         addClothModifier(obj, SHRINK_FACTOR)
         addMaterial(obj)
 
-        # bpy.context.view_layer.objects.active = obj
-        # obj.select_set(True)
-        # bpy.ops.object.convert(target='CURVE')
-        # bpy.context.object.data.bevel_depth = BEVEL_DEPTH
-
         return {'FINISHED'}
 
 
-# def register():
-#     bpy.utils.register_class(CreateTelaranaOperator)
-#     # bpy.types.VIEW3D_MT_add.append(menu_func)
+class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Telarana"
+    bl_label = "Telarana"
+    bl_idname = "VIEW3D_PT_CreateTelarana"
 
+    bpy.types.Scene.THREAD_COUNT = bpy.props.IntProperty(name='Count', default=5, min=2, max=250, step=1, description='Main thread count')
+    bpy.types.Scene.THREAD_STEPS = bpy.props.IntProperty(name='Subdivisions', default=10, min=5, max=50, step=1, description='Main thread subdivisions')
+    bpy.types.Scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(name='Count', default=5, min=2, max=250, step=1, description='Connecthing thread count')
+    bpy.types.Scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(name='Subdivisions', default=10, min=0, max=50, step=1, description='Connecting thread subdivisions')
+    bpy.types.Scene.RECURSION_LEVELS = bpy.props.IntProperty(name='Levels', default=100, min=1, max=250, step=1, description='Recursion levels')
+    bpy.types.Scene.SHRINK_FACTOR = bpy.props.FloatProperty(name='Tension', default=1, min=-1, max=1, step=0.1, description='Thread tension')
+    bpy.types.Scene.BEVEL_DEPTH = bpy.props.IntProperty(name='Thickness', default=3, min=1, step=1, description='Thread thickness in microns')
 
-# def unregister():
-#     bpy.utils.unregister_class(CreateTelaranaOperator)
-#     # bpy.types.VIEW3D_MT_add.remove(menu_func)
+    def draw(self, context):
+        # pass
+        layout = self.layout
+        scene = context.scene
+
+        layout.label(text="Main Threads")
+        row = layout.row(align=True)
+        row.prop(scene, 'THREAD_COUNT')
+        row.prop(scene, 'THREAD_STEPS')
+
+        layout.label(text="Connecting Threads")
+        row = layout.row(align=True)
+        row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
+        row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
+
+        split = layout.split()
+        col = split.column()
+        col.label(text="Levels")
+        col.prop(scene, "RECURSION_LEVELS", text='')
+
+        col = split.column()
+        col.label(text="Tension")
+        col.prop(scene, "SHRINK_FACTOR", text='')
+
+        col = split.column()
+        col.label(text="Thickness")
+        col.prop(scene, "BEVEL_DEPTH", text='')
+
+        row = layout.row()
+        row.scale_y = 3.0
+        row.operator('object.create_telarana', text='Generate')
