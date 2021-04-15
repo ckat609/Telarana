@@ -99,8 +99,10 @@ def createConnectingThreads(threads, threadCount, threadSteps):
         l1, l2 = random.sample(threads, k=2)
 
         firstLastVert = 0
-        randVert1 = random.randrange(firstLastVert, len(l1['verts']) - firstLastVert)
-        randVert2 = random.randrange(firstLastVert, len(l2['verts']) - firstLastVert)
+        randVert1 = random.randrange(
+            firstLastVert, len(l1['verts']) - firstLastVert)
+        randVert2 = random.randrange(
+            firstLastVert, len(l2['verts']) - firstLastVert)
         p1 = l1['verts'][randVert1]
         p2 = l2['verts'][randVert2]
 
@@ -114,7 +116,8 @@ def createThreadsRecursively(threads, threadCount, threadSteps, count):
     if(count <= 0):
         return threads
 
-    newThreads = threads + createConnectingThreads(threads, threadCount, threadSteps)
+    newThreads = threads + \
+        createConnectingThreads(threads, threadCount, threadSteps)
 
     return createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
 
@@ -143,10 +146,12 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
     strokes = layers.active.active_frame.strokes
 
     mainThreads = createMainThreads(strokes, threadCount, threadSteps)
-    connectedThreads = createThreadsRecursivelyWill(mainThreads, threadConnectionCount, threadConnectionSteps, recursionsLevels)
+    connectedThreads = createThreadsRecursivelyWill(
+        mainThreads, threadConnectionCount, threadConnectionSteps, recursionsLevels)
 
     allThreads = mainThreads + connectedThreads
-    mesh = reduce(processThreads, allThreads, {'verts': [], 'edges': [], 'pins': []})
+    mesh = reduce(processThreads, allThreads, {
+                  'verts': [], 'edges': [], 'pins': []})
     connectedMesh = connectThreads(mesh)
 
     meshTelarana = bpy.data.meshes.new("Telarana")
@@ -155,10 +160,12 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
 
     objTelarana.vertex_groups.new(name='pins')
 
-    meshTelarana.from_pydata(connectedMesh['verts'], connectedMesh['edges'], [])
+    meshTelarana.from_pydata(
+        connectedMesh['verts'], connectedMesh['edges'], [])
     meshTelarana.update()
 
     objTelarana.vertex_groups['pins'].add(connectedMesh['pins'], 1.0, 'ADD')
+    objTelarana["Telarana"] = 1
 
     bpy.context.view_layer.objects.active = objTelarana
     objTelarana.select_set(True)
@@ -209,56 +216,94 @@ class CreateTelaranaOperator(bpy.types.Operator):
         SHRINK_FACTOR = cs.SHRINK_FACTOR*0.3
         BEVEL_DEPTH = cs.BEVEL_DEPTH/1000000
 
-        obj = createTelaranaObject(THREAD_COUNT, THREAD_STEPS, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
+        obj = createTelaranaObject(
+            THREAD_COUNT, THREAD_STEPS, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
         addClothModifier(obj, SHRINK_FACTOR)
         addMaterial(obj)
 
         return {'FINISHED'}
 
 
-class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
+class VIEW3D_PT_Annotations(bpy.types.Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
     bl_category = "Telarana"
-    bl_label = "Telarana"
-    bl_idname = "VIEW3D_PT_CreateTelarana"
+    bl_label = "Simulation"
+    bl_idname = "VIEW3D_PT_Annotations"
+    bl_order = 0
 
-    bpy.types.Scene.THREAD_COUNT = bpy.props.IntProperty(name='Count', default=5, min=2, max=250, step=1, description='Main thread count')
-    bpy.types.Scene.THREAD_STEPS = bpy.props.IntProperty(name='Subdivisions', default=10, min=5, max=50, step=1, description='Main thread subdivisions')
-    bpy.types.Scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(name='Count', default=5, min=2, max=250, step=1, description='Connecthing thread count')
-    bpy.types.Scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(name='Subdivisions', default=10, min=0, max=50, step=1, description='Connecting thread subdivisions')
-    bpy.types.Scene.RECURSION_LEVELS = bpy.props.IntProperty(name='Levels', default=100, min=1, max=250, step=1, description='Recursion levels')
-    bpy.types.Scene.SHRINK_FACTOR = bpy.props.FloatProperty(name='Tension', default=1, min=-1, max=1, step=0.1, description='Thread tension')
-    bpy.types.Scene.BEVEL_DEPTH = bpy.props.IntProperty(name='Thickness', default=3, min=1, step=1, description='Thread thickness in microns')
+    bpy.types.Scene.BEVEL_DEPTH = bpy.props.IntProperty(
+        name='Thickness', default=3, min=1, step=1, description='Thread thickness in microns')
 
     def draw(self, context):
-        # pass
         layout = self.layout
         scene = context.scene
 
-        layout.label(text="Main Threads")
-        row = layout.row(align=True)
-        row.prop(scene, 'THREAD_COUNT')
-        row.prop(scene, 'THREAD_STEPS')
-
-        layout.label(text="Connecting Threads")
-        row = layout.row(align=True)
-        row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
-        row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
-
         split = layout.split()
-        col = split.column()
-        col.label(text="Levels")
-        col.prop(scene, "RECURSION_LEVELS", text='')
-
+        modTelarana = bpy.data.objects[context.object.name].modifiers["Telarana"]
         col = split.column()
         col.label(text="Tension")
-        col.prop(scene, "SHRINK_FACTOR", text='')
+        col.prop(modTelarana.settings, 'shrink_min', text='')
 
-        col = split.column()
-        col.label(text="Thickness")
-        col.prop(scene, "BEVEL_DEPTH", text='')
+        col.label(text="Collisions")
+        col.prop(modTelarana.collision_settings,
+                 'use_collision', text='Enable object collisions')
+        col.prop(modTelarana.collision_settings,
+                 'use_self_collision', text='Enable self collisions')
 
-        row = layout.row()
-        row.scale_y = 3.0
-        row.operator('object.create_telarana', text='Generate')
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and "Telarana" in context.object
+
+
+class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Telarana"
+    bl_label = "Generate"
+    bl_idname = "VIEW3D_PT_CreateTelarana"
+    bl_order = 99
+
+    # bl_parent_id = "VIEW3D_PT_view3d_cursor"
+    bpy.types.Scene.THREAD_COUNT = bpy.props.IntProperty(
+        name='Count', default=5, min=2, max=250, step=1, description='Main thread count')
+    bpy.types.Scene.THREAD_STEPS = bpy.props.IntProperty(
+        name='Subdivisions', default=10, min=5, max=50, step=1, description='Main thread subdivisions')
+    bpy.types.Scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(
+        name='Count', default=5, min=2, max=250, step=1, description='Connecthing thread count')
+    bpy.types.Scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(
+        name='Subdivisions', default=10, min=0, max=50, step=1, description='Connecting thread subdivisions')
+    bpy.types.Scene.RECURSION_LEVELS = bpy.props.IntProperty(
+        name='Levels', default=100, min=1, max=250, step=1, description='Recursion levels')
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        if len(bpy.context.scene.grease_pencil.layers.active.active_frame.strokes) >= 2:
+            layout.label(text="Main Threads")
+            row = layout.row(align=True)
+            row.prop(scene, 'THREAD_COUNT')
+            row.prop(scene, 'THREAD_STEPS')
+
+            layout.label(text="Connecting Threads")
+            row = layout.row(align=True)
+            row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
+            row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
+
+            split = layout.split()
+            col = split.column()
+            col.label(text="Levels")
+            col.prop(scene, "RECURSION_LEVELS", text='')
+
+            row = layout.row()
+            row.scale_y = 3.0
+            row.operator('object.create_telarana', text='Generate')
+        else:
+            layout.label(
+                text="Add at least two strokes",)
+
+    # @ classmethod
+    # def poll(cls, context):
+        # return len(bpy.context.scene.grease_pencil.layers.active.active_frame.strokes) >= 2
+        # pass

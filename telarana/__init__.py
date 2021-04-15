@@ -27,19 +27,18 @@ bl_info = {
 
 classesToRegisterUnregister = [
     CreateTelaranaOperator,
-    VIEW3D_PT_CreateTelarana
+    VIEW3D_PT_Annotations,
+    VIEW3D_PT_CreateTelarana,
 ]
 
 
 def register():
     for c in classesToRegisterUnregister:
-        print(c)
         bpy.utils.register_class(c)
 
 
 def unregister():
     for c in classesToRegisterUnregister:
-        print(c)
         bpy.utils.unregister_class(c)
 
 
