@@ -204,6 +204,7 @@ def addMaterial(obj):
 class CreateTelaranaOperator(bpy.types.Operator):
     bl_idname = "object.create_telarana"
     bl_label = "Create Telarana"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         cs = bpy.context.scene
@@ -213,7 +214,7 @@ class CreateTelaranaOperator(bpy.types.Operator):
         THREAD_CONNECTIONS_STEPS = cs.THREAD_CONNECTIONS_STEPS
         RECURSION_LEVELS = cs.RECURSION_LEVELS
 
-        SHRINK_FACTOR = cs.SHRINK_FACTOR*0.3
+        SHRINK_FACTOR = 0.3
         BEVEL_DEPTH = cs.BEVEL_DEPTH/1000000
 
         obj = createTelaranaObject(
@@ -221,16 +222,50 @@ class CreateTelaranaOperator(bpy.types.Operator):
         addClothModifier(obj, SHRINK_FACTOR)
         addMaterial(obj)
 
+        if(cs.DELETE_ANNOTATION == 1):
+            context.active_annotation_layer.clear()
+
         return {'FINISHED'}
 
 
-class VIEW3D_PT_Annotations(bpy.types.Panel):
+class VIEW3D_PT_TelaranaAnnotations(bpy.types.Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Telarana"
+    bl_label = "Annotations"
+    bl_idname = "VIEW3D_PT_TelaranaAnnotations"
+    bl_order = 0
+
+    def draw(self, context):
+        gpl = context.active_annotation_layer
+        gpd = context.annotation_data
+        scene = context.scene
+        tool_settings = context.tool_settings
+        # tool_settings.annotation_stroke_placement_view3d = 'SURFACE'
+        text = gpd.layers.active_note
+
+        layout = self.layout
+        split = layout.split()
+
+        layout.label(text="Color")
+        row = layout.row(align=True)
+        row.prop(gpl, 'color', text='')
+        row.popover('TOPBAR_PT_annotation_layers', text=text)
+
+        layout.separator()
+
+        row = layout.row(align=True)
+        row.prop(tool_settings, "annotation_stroke_placement_view3d",
+                 text="Placement")
+
+
+class VIEW3D_PT_TelaranaSim(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Telarana"
     bl_label = "Simulation"
-    bl_idname = "VIEW3D_PT_Annotations"
-    bl_order = 0
+    bl_idname = "VIEW3D_PT_TelaranaSim"
+    bl_order = 3
 
     bpy.types.Scene.BEVEL_DEPTH = bpy.props.IntProperty(
         name='Thickness', default=3, min=1, step=1, description='Thread thickness in microns')
@@ -262,39 +297,51 @@ class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
     bl_category = "Telarana"
     bl_label = "Generate"
     bl_idname = "VIEW3D_PT_CreateTelarana"
-    bl_order = 99
+    bl_order = 2
 
-    # bl_parent_id = "VIEW3D_PT_view3d_cursor"
-    bpy.types.Scene.THREAD_COUNT = bpy.props.IntProperty(
+    scene = bpy.types.Scene
+
+    scene.THREAD_COUNT = bpy.props.IntProperty(
         name='Count', default=5, min=2, max=250, step=1, description='Main thread count')
-    bpy.types.Scene.THREAD_STEPS = bpy.props.IntProperty(
+    scene.THREAD_STEPS = bpy.props.IntProperty(
         name='Subdivisions', default=10, min=5, max=50, step=1, description='Main thread subdivisions')
-    bpy.types.Scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(
+    scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(
         name='Count', default=5, min=2, max=250, step=1, description='Connecthing thread count')
-    bpy.types.Scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(
+    scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(
         name='Subdivisions', default=10, min=0, max=50, step=1, description='Connecting thread subdivisions')
-    bpy.types.Scene.RECURSION_LEVELS = bpy.props.IntProperty(
+    scene.RECURSION_LEVELS = bpy.props.IntProperty(
         name='Levels', default=100, min=1, max=250, step=1, description='Recursion levels')
+    scene.DELETE_ANNOTATION = bpy.props.BoolProperty(
+        name="Delete annotations", default=False)
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
 
-        if len(bpy.context.scene.grease_pencil.layers.active.active_frame.strokes) >= 2:
+        if len(strokes) >= 2:
             layout.label(text="Main Threads")
             row = layout.row(align=True)
             row.prop(scene, 'THREAD_COUNT')
             row.prop(scene, 'THREAD_STEPS')
+
+            layout.separator()
 
             layout.label(text="Connecting Threads")
             row = layout.row(align=True)
             row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
             row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
 
-            split = layout.split()
-            col = split.column()
-            col.label(text="Levels")
-            col.prop(scene, "RECURSION_LEVELS", text='')
+            layout.separator()
+
+            layout.label(text="Levels")
+            row = layout.row()
+            row.prop(scene, "RECURSION_LEVELS", text='')
+
+            layout.separator()
+
+            row = layout.row()
+            row.prop(scene, 'DELETE_ANNOTATION')
 
             row = layout.row()
             row.scale_y = 3.0
@@ -302,8 +349,3 @@ class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
         else:
             layout.label(
                 text="Add at least two strokes",)
-
-    # @ classmethod
-    # def poll(cls, context):
-        # return len(bpy.context.scene.grease_pencil.layers.active.active_frame.strokes) >= 2
-        # pass
