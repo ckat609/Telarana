@@ -116,8 +116,7 @@ def createThreadsRecursively(threads, threadCount, threadSteps, count):
     if(count <= 0):
         return threads
 
-    newThreads = threads + \
-        createConnectingThreads(threads, threadCount, threadSteps)
+    newThreads = threads + createConnectingThreads(threads, threadCount, threadSteps)
 
     return createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
 
@@ -128,7 +127,7 @@ def createThreadsRecursivelyWill(threads, threadCount, threadSteps, count):
 
     newThreads = createConnectingThreads(threads, threadCount, threadSteps)
 
-    return threads + createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
+    return threads + createThreadsRecursivelyWill(newThreads, threadCount, threadSteps, count-1)
 
 
 def createMainThreads(strokes, threadCount, threadSteps):
@@ -146,7 +145,7 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
     strokes = layers.active.active_frame.strokes
 
     mainThreads = createMainThreads(strokes, threadCount, threadSteps)
-    connectedThreads = createThreadsRecursivelyWill(
+    connectedThreads = createThreadsRecursively(
         mainThreads, threadConnectionCount, threadConnectionSteps, recursionsLevels)
 
     allThreads = mainThreads + connectedThreads
@@ -169,6 +168,8 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
 
     bpy.context.view_layer.objects.active = objTelarana
     objTelarana.select_set(True)
+
+    bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
 
     return objTelarana
 
@@ -237,22 +238,26 @@ class VIEW3D_PT_TelaranaAnnotations(bpy.types.Panel):
     bl_order = 0
 
     def draw(self, context):
-        gpl = context.active_annotation_layer
+        layout = self.layout
         gpd = context.annotation_data
         scene = context.scene
         tool_settings = context.tool_settings
         # tool_settings.annotation_stroke_placement_view3d = 'SURFACE'
-        text = gpd.layers.active_note
+        if gpd is not None:
+            if gpd.layers.active_note is not None:
+                text = gpd.layers.active_note
+            else:
+                text = ""
 
-        layout = self.layout
-        split = layout.split()
+            gpl = context.active_annotation_layer
+            if gpl is not None:
+                # if context.space_data.type == 'VIEW_3D':
+                layout.label(text="Color")
+                row = layout.row(align=True)
+                row.prop(gpl, 'color', text='')
+                row.popover('TOPBAR_PT_annotation_layers', text=text)
 
-        layout.label(text="Color")
-        row = layout.row(align=True)
-        row.prop(gpl, 'color', text='')
-        row.popover('TOPBAR_PT_annotation_layers', text=text)
-
-        layout.separator()
+                layout.separator()
 
         row = layout.row(align=True)
         row.prop(tool_settings, "annotation_stroke_placement_view3d",
@@ -286,9 +291,15 @@ class VIEW3D_PT_TelaranaSim(bpy.types.Panel):
         col.prop(modTelarana.collision_settings,
                  'use_self_collision', text='Enable self collisions')
 
+        row = layout.row()
+        row.scale_y = 3
+
+        op = row.operator("object.modifier_apply", text="Apply")
+        op.modifier = 'Telarana'
+
     @classmethod
     def poll(cls, context):
-        return context.object is not None and "Telarana" in context.object
+        return context.object is not None and "Telarana" in context.object and "Telarana" in context.object.modifiers
 
 
 class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
@@ -317,35 +328,43 @@ class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
+        # strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
 
-        if len(strokes) >= 2:
-            layout.label(text="Main Threads")
-            row = layout.row(align=True)
-            row.prop(scene, 'THREAD_COUNT')
-            row.prop(scene, 'THREAD_STEPS')
+        gpd = context.annotation_data
+        if gpd is not None:
+            gpl = context.active_annotation_layer
+            if gpl is not None:
+                strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
+                if len(strokes) >= 2:
+                    layout.label(text="Main Threads")
+                    row = layout.row(align=True)
+                    row.prop(scene, 'THREAD_COUNT')
+                    row.prop(scene, 'THREAD_STEPS')
 
-            layout.separator()
+                    layout.separator()
 
-            layout.label(text="Connecting Threads")
-            row = layout.row(align=True)
-            row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
-            row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
+                    layout.label(text="Connecting Threads")
+                    row = layout.row(align=True)
+                    row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
+                    row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
 
-            layout.separator()
+                    layout.separator()
 
-            layout.label(text="Levels")
-            row = layout.row()
-            row.prop(scene, "RECURSION_LEVELS", text='')
+                    layout.label(text="Levels")
+                    row = layout.row()
+                    row.prop(scene, "RECURSION_LEVELS", text='')
 
-            layout.separator()
+                    layout.separator()
 
-            row = layout.row()
-            row.prop(scene, 'DELETE_ANNOTATION')
+                    row = layout.row()
+                    row.prop(scene, 'DELETE_ANNOTATION')
 
-            row = layout.row()
-            row.scale_y = 3.0
-            row.operator('object.create_telarana', text='Generate')
-        else:
-            layout.label(
-                text="Add at least two strokes",)
+                    row = layout.row()
+                    row.scale_y = 3.0
+                    row.operator('object.create_telarana', text='Generate',)
+                else:
+                    layout.label(text="Draw at least two strokes",)
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_annotation_layer
