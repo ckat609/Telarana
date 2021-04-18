@@ -192,7 +192,7 @@ def addMaterial(obj):
 
     mat.use_nodes = True
 
-    if mat.node_tree.nodes.get('ShaderNodeBsdfTranslucent') is not None:
+    if mat.node_tree.nodes.get('Principled BSDF') is not None:
         mat.node_tree.nodes.remove(mat.node_tree.nodes.get('Principled BSDF'))
         matOut = mat.node_tree.nodes.get('Material Output')
         translucent = mat.node_tree.nodes.new('ShaderNodeBsdfTranslucent')
@@ -357,7 +357,7 @@ class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
                     layout.separator()
 
                     row = layout.row()
-                    row.prop(scene, 'DELETE_ANNOTATION')
+                    row.prop(scene, 'DELETE_ANNOTATION', text='Clear annotations')
 
                     row = layout.row()
                     row.scale_y = 3.0
