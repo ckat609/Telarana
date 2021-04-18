@@ -27,9 +27,11 @@ bl_info = {
 
 classesToRegisterUnregister = [
     CreateTelaranaOperator,
-    VIEW3D_PT_TelaranaAnnotations,
-    VIEW3D_PT_CreateTelarana,
-    VIEW3D_PT_TelaranaSim,
+    RunTelaranaFunctionsOperator,
+    VIEW3D_PT_AnnotateTelarana,
+    VIEW3D_PT_GenerateTelarana,
+    VIEW3D_PT_SimulateTelarana,
+    VIEW3D_PT_ConvertTelarana,
 ]
 
 

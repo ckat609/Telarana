@@ -188,6 +188,7 @@ def addMaterial(obj):
 
     if mat is None:
         mat = bpy.data.materials.new('Telarana')
+
     obj.data.materials.append(mat)
 
     mat.use_nodes = True
@@ -202,9 +203,24 @@ def addMaterial(obj):
     return mat
 
 
+class RunTelaranaFunctionsOperator(bpy.types.Operator):
+    bl_idname = "object.run_telarana_functions"
+    bl_label = "Run Telaraña Functions"
+    bl_options = {"REGISTER", "UNDO"}
+
+    action = bpy.props.EnumProperty(items=[('CONVERT_MESH_TO_CURVE', 'Conver mesh to curve', 'Conver mesh to curve')])
+
+    def execute(self, context):
+        if(self.action == 'CONVERT_MESH_TO_CURVE'):
+            obj = context.active_object
+            bpy.ops.object.convert(target='CURVE')
+            addMaterial(obj)
+        return {'FINISHED'}
+
+
 class CreateTelaranaOperator(bpy.types.Operator):
     bl_idname = "object.create_telarana"
-    bl_label = "Create Telarana"
+    bl_label = "Create Telaraña"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -221,7 +237,6 @@ class CreateTelaranaOperator(bpy.types.Operator):
         obj = createTelaranaObject(
             THREAD_COUNT, THREAD_STEPS, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
         addClothModifier(obj, SHRINK_FACTOR)
-        addMaterial(obj)
 
         if(cs.DELETE_ANNOTATION == 1):
             context.active_annotation_layer.clear()
@@ -229,12 +244,12 @@ class CreateTelaranaOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class VIEW3D_PT_TelaranaAnnotations(bpy.types.Panel):
+class VIEW3D_PT_AnnotateTelarana(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Telarana"
+    bl_category = "Telaraña"
     bl_label = "Annotations"
-    bl_idname = "VIEW3D_PT_TelaranaAnnotations"
+    bl_idname = "VIEW3D_PT_AnnotateTelarana"
     bl_order = 0
 
     def draw(self, context):
@@ -251,7 +266,6 @@ class VIEW3D_PT_TelaranaAnnotations(bpy.types.Panel):
 
             gpl = context.active_annotation_layer
             if gpl is not None:
-                # if context.space_data.type == 'VIEW_3D':
                 layout.label(text="Color")
                 row = layout.row(align=True)
                 row.prop(gpl, 'color', text='')
@@ -264,12 +278,12 @@ class VIEW3D_PT_TelaranaAnnotations(bpy.types.Panel):
                  text="Placement")
 
 
-class VIEW3D_PT_TelaranaSim(bpy.types.Panel):
+class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Telarana"
+    bl_category = "Telaraña"
     bl_label = "Simulation"
-    bl_idname = "VIEW3D_PT_TelaranaSim"
+    bl_idname = "VIEW3D_PT_SimulateTelarana"
     bl_order = 3
 
     bpy.types.Scene.BEVEL_DEPTH = bpy.props.IntProperty(
@@ -293,7 +307,6 @@ class VIEW3D_PT_TelaranaSim(bpy.types.Panel):
 
         row = layout.row()
         row.scale_y = 3
-
         op = row.operator("object.modifier_apply", text="Apply")
         op.modifier = 'Telarana'
 
@@ -302,12 +315,42 @@ class VIEW3D_PT_TelaranaSim(bpy.types.Panel):
         return context.object is not None and "Telarana" in context.object and "Telarana" in context.object.modifiers
 
 
-class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
+class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Telarana"
+    bl_category = "Telaraña"
+    bl_label = "Convert"
+    bl_idname = "VIEW3D_PT_ConvertTelarana"
+    bl_order = 5
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        if context.object.type == 'CURVE':
+            curveTelarana = bpy.data.curves[context.active_object.data.name]
+            # curveTelarana.bevel_depth = 0.003
+
+            layout.label(text="Thickness")
+            row = layout.row()
+            row.prop(curveTelarana, "bevel_depth")
+        else:
+            row = layout.row()
+            row.scale_y = 3
+            op = row.operator("object.run_telarana_functions", text='Convert')
+            op.action = 'CONVERT_MESH_TO_CURVE'
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and "Telarana" in context.object and "Telarana" not in context.object.modifiers
+
+
+class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Telaraña"
     bl_label = "Generate"
-    bl_idname = "VIEW3D_PT_CreateTelarana"
+    bl_idname = "VIEW3D_PT_GenerateTelarana"
     bl_order = 2
 
     scene = bpy.types.Scene
@@ -328,7 +371,6 @@ class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        # strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
 
         gpd = context.annotation_data
         if gpd is not None:
@@ -350,7 +392,7 @@ class VIEW3D_PT_CreateTelarana(bpy.types.Panel):
 
                     layout.separator()
 
-                    layout.label(text="Levels")
+                    layout.label(text="Recursions")
                     row = layout.row()
                     row.prop(scene, "RECURSION_LEVELS", text='')
 
