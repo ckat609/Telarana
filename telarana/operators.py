@@ -98,7 +98,7 @@ def createConnectingThreads(threads, threadCount, threadSteps):
     for j in range(threadCount):
         l1, l2 = random.sample(threads, k=2)
 
-        firstLastVert = 0
+        firstLastVert = 1
         randVert1 = random.randrange(
             firstLastVert, len(l1['verts']) - firstLastVert)
         randVert2 = random.randrange(
@@ -116,7 +116,8 @@ def createThreadsRecursively(threads, threadCount, threadSteps, count):
     if(count <= 0):
         return threads
 
-    newThreads = threads + createConnectingThreads(threads, threadCount, threadSteps)
+    newThreads = threads + \
+        createConnectingThreads(threads, threadCount, threadSteps)
 
     return createThreadsRecursively(newThreads, threadCount, threadSteps, count-1)
 
@@ -175,10 +176,18 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
 
 
 def addClothModifier(obj, shrink):
-    mod = obj.modifiers.new('Telarana', 'CLOTH')
+    mod = obj.modifiers.new('TelaranaCloth', 'CLOTH')
     mod.settings.vertex_group_mass = "pins"
     mod.settings.shrink_min = shrink
     mod.settings.bending_model = 'LINEAR'
+
+    return mod
+
+
+def addSubsurfModifier(obj, subdivisions):
+    mod = obj.modifiers.new('TelaranaSubsurf', 'SUBSURF')
+    mod.show_viewport = False
+    mod.render_levels = 1
 
     return mod
 
@@ -203,17 +212,23 @@ def addMaterial(obj):
     return mat
 
 
+def convertToCurve(obj):
+    bpy.ops.object.convert(target='CURVE')
+    obj.data.bevel_depth = 0.00003
+    return obj
+
+
 class RunTelaranaFunctionsOperator(bpy.types.Operator):
     bl_idname = "object.run_telarana_functions"
     bl_label = "Run Telaraña Functions"
     bl_options = {"REGISTER", "UNDO"}
 
-    action = bpy.props.EnumProperty(items=[('CONVERT_MESH_TO_CURVE', 'Conver mesh to curve', 'Conver mesh to curve')])
+    action = bpy.props.EnumProperty(
+        items=[('CONVERT_MESH_TO_CURVE', 'Convert mesh to curve', 'Convert mesh to curve')])
 
     def execute(self, context):
         if(self.action == 'CONVERT_MESH_TO_CURVE'):
-            obj = context.active_object
-            bpy.ops.object.convert(target='CURVE')
+            obj = convertToCurve(context.active_object)
             addMaterial(obj)
         return {'FINISHED'}
 
@@ -257,7 +272,6 @@ class VIEW3D_PT_AnnotateTelarana(bpy.types.Panel):
         gpd = context.annotation_data
         scene = context.scene
         tool_settings = context.tool_settings
-        # tool_settings.annotation_stroke_placement_view3d = 'SURFACE'
         if gpd is not None:
             if gpd.layers.active_note is not None:
                 text = gpd.layers.active_note
@@ -294,7 +308,7 @@ class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
         scene = context.scene
 
         split = layout.split()
-        modTelarana = bpy.data.objects[context.object.name].modifiers["Telarana"]
+        modTelarana = bpy.data.objects[context.object.name].modifiers["TelaranaCloth"]
         col = split.column()
         col.label(text="Tension")
         col.prop(modTelarana.settings, 'shrink_min', text='')
@@ -308,11 +322,11 @@ class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
         row = layout.row()
         row.scale_y = 3
         op = row.operator("object.modifier_apply", text="Apply")
-        op.modifier = 'Telarana'
+        op.modifier = 'TelaranaCloth'
 
     @classmethod
     def poll(cls, context):
-        return context.object is not None and "Telarana" in context.object and "Telarana" in context.object.modifiers
+        return context.object is not None and "Telarana" in context.object and "TelaranaCloth" in context.object.modifiers
 
 
 class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
@@ -342,7 +356,7 @@ class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.object is not None and "Telarana" in context.object and "Telarana" not in context.object.modifiers
+        return context.object is not None and "Telarana" in context.object and "TelaranaCloth" not in context.object.modifiers
 
 
 class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
@@ -399,7 +413,8 @@ class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
                     layout.separator()
 
                     row = layout.row()
-                    row.prop(scene, 'DELETE_ANNOTATION', text='Clear annotations')
+                    row.prop(scene, 'DELETE_ANNOTATION',
+                             text='Clear annotations')
 
                     row = layout.row()
                     row.scale_y = 3.0
