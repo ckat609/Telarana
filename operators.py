@@ -223,7 +223,7 @@ class RunTelaranaFunctionsOperator(bpy.types.Operator):
     bl_label = "Run Telaraña Functions"
     bl_options = {"REGISTER", "UNDO"}
 
-    action = bpy.props.EnumProperty(
+    action: bpy.props.EnumProperty(
         items=[('CONVERT_MESH_TO_CURVE', 'Convert mesh to curve', 'Convert mesh to curve')])
 
     def execute(self, context):
@@ -390,35 +390,36 @@ class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
         if gpd is not None:
             gpl = context.active_annotation_layer
             if gpl is not None:
-                strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
-                if len(strokes) >= 2:
-                    layout.label(text="Main Threads")
-                    row = layout.row(align=True)
-                    row.prop(scene, 'THREAD_COUNT')
-                    row.prop(scene, 'THREAD_STEPS')
+                if hasattr(bpy.context.scene.grease_pencil.layers.active.active_frame, 'strokes'):
+                    strokes = bpy.context.scene.grease_pencil.layers.active.active_frame.strokes
+                    if len(strokes) >= 2:
+                        layout.label(text="Main Threads")
+                        row = layout.row(align=True)
+                        row.prop(scene, 'THREAD_COUNT')
+                        row.prop(scene, 'THREAD_STEPS')
 
-                    layout.separator()
+                        layout.separator()
 
-                    layout.label(text="Connecting Threads")
-                    row = layout.row(align=True)
-                    row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
-                    row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
+                        layout.label(text="Connecting Threads")
+                        row = layout.row(align=True)
+                        row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
+                        row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
 
-                    layout.separator()
+                        layout.separator()
 
-                    layout.label(text="Recursions")
-                    row = layout.row()
-                    row.prop(scene, "RECURSION_LEVELS", text='')
+                        layout.label(text="Recursions")
+                        row = layout.row()
+                        row.prop(scene, "RECURSION_LEVELS", text='')
 
-                    layout.separator()
+                        layout.separator()
 
-                    row = layout.row()
-                    row.prop(scene, 'DELETE_ANNOTATION',
-                             text='Clear annotations')
+                        row = layout.row()
+                        row.prop(scene, 'DELETE_ANNOTATION',
+                                 text='Clear annotations')
 
-                    row = layout.row()
-                    row.scale_y = 3.0
-                    row.operator('object.create_telarana', text='Generate',)
+                        row = layout.row()
+                        row.scale_y = 3.0
+                        row.operator('object.create_telarana', text='Generate',)
                 else:
                     layout.label(text="Draw at least two strokes",)
 
