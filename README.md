@@ -20,11 +20,11 @@ NOTE: steps 3 and 7 are optional
 1. Dibuja por lo menos 2 líneas de anotaciones
 2. Haz click sobre "Generate" para generar las aristas
 3. Borra algunos vértices para dar la apariencia de que la telaraña está rota
-4. Reproduce la anmacion para que corra la simulación
-5. Pausa la animacion una vez logres el resultado deseado
+4. Reproduce la animación para que corra la simulación
+5. Pausa la animación una vez logres el resultado deseado
 6. Haz click sobre "Apply" para bakear el cuadro
 7. Modifica la malla con edición proporcional
-8. Haz click sobre "Convert" para convertis las aristas en curvas
+8. Haz click sobre "Convert" para convertir las aristas en curvas
 9. Ajusta el grosor de los hilos
 
 NOTA: los pasos 3 y 7 son opcionales
