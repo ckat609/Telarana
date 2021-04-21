@@ -18,10 +18,10 @@ bl_info = {
     "author": "Armando Tello, Will Wright",
     "blender": (2, 92, 0),
     "version": (1, 0, 0),
-    "location": "",
     "description": "Generates a cobweb using the current grease pencil layer strokes",
-    "warning": "",
-    "category": "Object"
+    "location": "VIEW3D > OBJECT",
+    "category": "Object",
+    "website": "www.armandotello.com"
 }
 
 classesToRegisterUnregister = [

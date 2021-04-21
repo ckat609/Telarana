@@ -214,7 +214,7 @@ def addMaterial(obj):
 
 def convertToCurve(obj):
     bpy.ops.object.convert(target='CURVE')
-    obj.data.bevel_depth = 0.000003
+    obj.data.bevel_depth = 0.00003
     return obj
 
 
@@ -343,7 +343,6 @@ class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
 
         if context.object.type == 'CURVE':
             curveTelarana = bpy.data.curves[context.active_object.data.name]
-            # curveTelarana.bevel_depth = 0.003
 
             layout.label(text="Thickness")
             row = layout.row()
