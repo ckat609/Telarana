@@ -227,7 +227,7 @@ def addMaterial(obj):
 
 def convertToCurve(obj):
     bpy.ops.object.convert(target='CURVE')
-    obj.data.bevel_depth = 0.000003
+    obj.data.bevel_depth = 0.00003
     return obj
 
 
