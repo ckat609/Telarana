@@ -15,6 +15,7 @@ import bpy
 import random
 import math
 import numpy
+import bmesh
 from functools import reduce
 
 
@@ -175,6 +176,18 @@ def createTelaranaObject(threadCount, threadSteps, threadConnectionCount, thread
     return objTelarana
 
 
+def tearThreads(obj, amount):
+    vertCount = len(obj.data.vertices)
+    maxVerts = int(0.001 * amount * vertCount)
+    verts = random.sample(list(obj.data.vertices), k=maxVerts)
+
+    for i in verts:
+        print(i.index)
+
+    print(maxVerts)
+    return obj
+
+
 def addClothModifier(obj, shrink):
     mod = obj.modifiers.new('TelaranaCloth', 'CLOTH')
     mod.settings.vertex_group_mass = "pins"
@@ -240,18 +253,21 @@ class CreateTelaranaOperator(bpy.types.Operator):
 
     def execute(self, context):
         cs = bpy.context.scene
-        THREAD_COUNT = cs.THREAD_COUNT
-        THREAD_STEPS = cs.THREAD_STEPS
-        THREAD_CONNECTIONS_COUNT = cs.THREAD_CONNECTIONS_COUNT
-        THREAD_CONNECTIONS_STEPS = cs.THREAD_CONNECTIONS_STEPS
-        RECURSION_LEVELS = cs.RECURSION_LEVELS
+        # THREAD_COUNT = cs.THREAD_COUNT
+        # THREAD_STEPS = cs.THREAD_STEPS
+        # THREAD_CONNECTIONS_COUNT = cs.THREAD_CONNECTIONS_COUNT
+        # THREAD_CONNECTIONS_STEPS = cs.THREAD_CONNECTIONS_STEPS
+        # RECURSION_LEVELS = cs.RECURSION_LEVELS
 
         SHRINK_FACTOR = 0.3
         BEVEL_DEPTH = cs.BEVEL_DEPTH/1000000
 
         obj = createTelaranaObject(
-            THREAD_COUNT, THREAD_STEPS, THREAD_CONNECTIONS_COUNT, THREAD_CONNECTIONS_STEPS, RECURSION_LEVELS)
+            cs.THREAD_COUNT, cs.THREAD_STEPS, cs.THREAD_CONNECTIONS_COUNT, cs.THREAD_CONNECTIONS_STEPS, cs.RECURSION_LEVELS)
         addClothModifier(obj, SHRINK_FACTOR)
+
+        if cs.TEAR_THREADS:
+            tearThreads(obj, cs.THREAD_TEARING_AMOUNT)
 
         if(cs.DELETE_ANNOTATION == 1):
             context.active_annotation_layer.clear()
@@ -343,8 +359,6 @@ class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
 
         if context.object.type == 'CURVE':
             curveTelarana = bpy.data.curves[context.active_object.data.name]
-            # curveTelarana.bevel_depth = 0.003
-
             layout.label(text="Thickness")
             row = layout.row()
             row.prop(curveTelarana, "bevel_depth")
@@ -370,17 +384,21 @@ class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
     scene = bpy.types.Scene
 
     scene.THREAD_COUNT = bpy.props.IntProperty(
-        name='Count', default=5, min=2, max=250, step=1, description='Main thread count')
+        name='Count', default=50, min=2, max=250, step=1, description='Main thread count')
     scene.THREAD_STEPS = bpy.props.IntProperty(
         name='Subdivisions', default=10, min=5, max=50, step=1, description='Main thread subdivisions')
     scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(
-        name='Count', default=5, min=2, max=250, step=1, description='Connecthing thread count')
+        name='Count', default=50, min=2, max=250, step=1, description='Connecthing thread count')
     scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(
         name='Subdivisions', default=10, min=0, max=50, step=1, description='Connecting thread subdivisions')
     scene.RECURSION_LEVELS = bpy.props.IntProperty(
-        name='Levels', default=100, min=1, max=250, step=1, description='Recursion levels')
+        name='Levels', default=10, min=1, max=250, step=1, description='Recursion levels')
+    scene.TEAR_THREADS = bpy.props.BoolProperty(
+        name='Tear threads', default=False)
+    scene.THREAD_TEARING_AMOUNT = bpy.props.FloatProperty(
+        name='Thread tearing amount', default=1, min=1, max=10, step=0.1, description='Thread tearing amount')
     scene.DELETE_ANNOTATION = bpy.props.BoolProperty(
-        name="Delete annotations", default=False)
+        name='Delete annotations', default=False)
 
     def draw(self, context):
         layout = self.layout
@@ -407,9 +425,17 @@ class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
 
                         layout.separator()
 
-                        layout.label(text="Recursions")
                         row = layout.row()
-                        row.prop(scene, "RECURSION_LEVELS", text='')
+                        row.prop(scene, "RECURSION_LEVELS")
+
+                        layout.separator()
+
+                        row = layout.row()
+                        row.prop(scene, 'TEAR_THREADS', text='Tear threads')
+
+                        if(scene.TEAR_THREADS):
+                            row = layout.row()
+                            row.prop(scene, 'THREAD_TEARING_AMOUNT')
 
                         layout.separator()
 
@@ -419,10 +445,11 @@ class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
 
                         row = layout.row()
                         row.scale_y = 3.0
-                        row.operator('object.create_telarana', text='Generate',)
+                        row.operator('object.create_telarana',
+                                     text='Generate',)
                 else:
                     layout.label(text="Draw at least two strokes",)
 
-    @classmethod
+    @ classmethod
     def poll(cls, context):
         return context.active_annotation_layer
