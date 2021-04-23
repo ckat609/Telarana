@@ -28,7 +28,7 @@ classesToRegisterUnregister = [
     CreateTelaranaOperator,
     RunTelaranaFunctionsOperator,
     VIEW3D_PT_AnnotateTelarana,
-    VIEW3D_PT_GenerateTelarana,
+    VIEW3D_PT_TelaranaGeometry,
     VIEW3D_PT_SimulateTelarana,
     VIEW3D_PT_TelaranaThickness,
 ]

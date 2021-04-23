@@ -364,7 +364,7 @@ class VIEW3D_PT_TelaranaThickness(bpy.types.Panel):
         return context.object is not None and "Telarana" in context.object and "TelaranaCloth" not in context.object.modifiers
 
 
-class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
+class VIEW3D_PT_TelaranaGeometry(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Telaraña"
