@@ -17,7 +17,7 @@ bl_info = {
     "name": "Telaraña",
     "author": "Armando Tello, Will Wright",
     "blender": (2, 92, 0),
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "description": "Generates a cobweb using the current grease pencil layer strokes",
     "location": "VIEW3D > OBJECT",
     "category": "Object",
@@ -30,7 +30,7 @@ classesToRegisterUnregister = [
     VIEW3D_PT_AnnotateTelarana,
     VIEW3D_PT_GenerateTelarana,
     VIEW3D_PT_SimulateTelarana,
-    VIEW3D_PT_ConvertTelarana,
+    VIEW3D_PT_TelaranaThickness,
 ]
 
 

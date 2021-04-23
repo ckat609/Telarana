@@ -255,21 +255,16 @@ class CreateTelaranaOperator(bpy.types.Operator):
 
     def execute(self, context):
         cs = bpy.context.scene
-        # THREAD_COUNT = cs.THREAD_COUNT
-        # THREAD_STEPS = cs.THREAD_STEPS
-        # THREAD_CONNECTIONS_COUNT = cs.THREAD_CONNECTIONS_COUNT
-        # THREAD_CONNECTIONS_STEPS = cs.THREAD_CONNECTIONS_STEPS
-        # RECURSION_LEVELS = cs.RECURSION_LEVELS
 
-        SHRINK_FACTOR = 0.3
+        SHRINK_FACTOR = 0.0
         BEVEL_DEPTH = cs.BEVEL_DEPTH/1000000
 
         obj = createTelaranaObject(
             cs.THREAD_COUNT, cs.THREAD_STEPS, cs.THREAD_CONNECTIONS_COUNT, cs.THREAD_CONNECTIONS_STEPS, cs.RECURSION_LEVELS)
         addClothModifier(obj, SHRINK_FACTOR)
 
-        if cs.TEAR_THREADS:
-            tearThreads(obj, cs.THREAD_TEARING_AMOUNT)
+        # if cs.TEAR_THREADS:
+        #     tearThreads(obj, cs.THREAD_TEARING_AMOUNT)
 
         if(cs.DELETE_ANNOTATION == 1):
             context.active_annotation_layer.clear()
@@ -337,27 +332,22 @@ class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
         col.prop(modTelarana.collision_settings,
                  'use_self_collision', text='Enable self collisions')
 
-        # row = layout.row()
-        # row.scale_y = 3
-        # op = row.operator("object.modifier_apply", text="Apply")
-        # op.modifier = 'TelaranaCloth'
-
         row = layout.row()
         row.scale_y = 3
         op = row.operator("object.run_telarana_functions", text='Apply')
-        op.action = 'APPLY_SIM_AND_CONVERT_MESH_TO_CURVE'
+        op.action = 'APPLY_AND_CONVERT_MESH_TO_CURVE'
 
     @classmethod
     def poll(cls, context):
         return context.object is not None and "Telarana" in context.object and "TelaranaCloth" in context.object.modifiers
 
 
-class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
+class VIEW3D_PT_TelaranaThickness(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Telaraña"
-    bl_label = "Convert"
-    bl_idname = "VIEW3D_PT_ConvertTelarana"
+    bl_label = "Geometry"
+    bl_idname = "VIEW3D_PT_TelaranaThickness"
     bl_order = 5
 
     def draw(self, context):
@@ -366,9 +356,8 @@ class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
 
         if context.object.type == 'CURVE':
             curveTelarana = bpy.data.curves[context.active_object.data.name]
-            layout.label(text="Thickness")
             row = layout.row()
-            row.prop(curveTelarana, "bevel_depth")
+            row.prop(curveTelarana, "bevel_depth", text="Thickness")
 
     @classmethod
     def poll(cls, context):
@@ -432,12 +421,12 @@ class VIEW3D_PT_GenerateTelarana(bpy.types.Panel):
 
                         layout.separator()
 
-                        row = layout.row()
-                        row.prop(scene, 'TEAR_THREADS', text='Tear threads')
+                        # row = layout.row()
+                        # row.prop(scene, 'TEAR_THREADS', text='Tear threads')
 
-                        if(scene.TEAR_THREADS):
-                            row = layout.row()
-                            row.prop(scene, 'THREAD_TEARING_AMOUNT')
+                        # if(scene.TEAR_THREADS):
+                        #     row = layout.row()
+                        #     row.prop(scene, 'THREAD_TEARING_AMOUNT')
 
                         layout.separator()
 
