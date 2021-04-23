@@ -237,11 +237,13 @@ class RunTelaranaFunctionsOperator(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     action: bpy.props.EnumProperty(
-        items=[('CONVERT_MESH_TO_CURVE', 'Convert mesh to curve', 'Convert mesh to curve')])
+        items=[('APPLY_AND_CONVERT_MESH_TO_CURVE', 'Convert mesh to curve', 'Convert mesh to curve')])
 
     def execute(self, context):
-        if(self.action == 'CONVERT_MESH_TO_CURVE'):
-            obj = convertToCurve(context.active_object)
+        if(self.action == 'APPLY_AND_CONVERT_MESH_TO_CURVE'):
+            bpy.ops.object.modifier_apply(modifier='TelaranaCloth')
+            obj = context.active_object
+            newObj = convertToCurve(obj)
             addMaterial(obj)
         return {'FINISHED'}
 
@@ -335,10 +337,15 @@ class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
         col.prop(modTelarana.collision_settings,
                  'use_self_collision', text='Enable self collisions')
 
+        # row = layout.row()
+        # row.scale_y = 3
+        # op = row.operator("object.modifier_apply", text="Apply")
+        # op.modifier = 'TelaranaCloth'
+
         row = layout.row()
         row.scale_y = 3
-        op = row.operator("object.modifier_apply", text="Apply")
-        op.modifier = 'TelaranaCloth'
+        op = row.operator("object.run_telarana_functions", text='Apply')
+        op.action = 'APPLY_SIM_AND_CONVERT_MESH_TO_CURVE'
 
     @classmethod
     def poll(cls, context):
@@ -362,11 +369,6 @@ class VIEW3D_PT_ConvertTelarana(bpy.types.Panel):
             layout.label(text="Thickness")
             row = layout.row()
             row.prop(curveTelarana, "bevel_depth")
-        else:
-            row = layout.row()
-            row.scale_y = 3
-            op = row.operator("object.run_telarana_functions", text='Convert')
-            op.action = 'CONVERT_MESH_TO_CURVE'
 
     @classmethod
     def poll(cls, context):
