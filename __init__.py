@@ -12,12 +12,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 import bpy
 from .operators import *
+from .panels import *
 
 bl_info = {
     "name": "Telaraña",
     "author": "Armando Tello, Will Wright",
     "blender": (2, 92, 0),
-    "version": (1, 0, 1),
+    "version": (1, 0, 2),
     "description": "Generates a cobweb using the current grease pencil layer strokes",
     "location": "VIEW3D > OBJECT",
     "category": "Object",
