@@ -18,7 +18,7 @@ bl_info = {
     "name": "Telaraña",
     "author": "Armando Tello, Will Wright",
     "blender": (2, 92, 0),
-    "version": (1, 0, 2),
+    "version": (1, 0, 3),
     "description": "Generates a cobweb using the current grease pencil layer strokes",
     "location": "VIEW3D > OBJECT",
     "category": "Object",
@@ -26,8 +26,9 @@ bl_info = {
 }
 
 classesToRegisterUnregister = [
+    TelaranaSettings,
     CreateTelaranaOperator,
-    RunTelaranaFunctionsOperator,
+    TelaranaFunctionsOperator,
     VIEW3D_PT_AnnotateTelarana,
     VIEW3D_PT_TelaranaGeometry,
     VIEW3D_PT_SimulateTelarana,
@@ -38,12 +39,12 @@ classesToRegisterUnregister = [
 def register():
     for c in classesToRegisterUnregister:
         bpy.utils.register_class(c)
+    
+    bpy.types.Scene.telarana = bpy.props.PointerProperty(type=TelaranaSettings) 
 
 
 def unregister():
     for c in classesToRegisterUnregister:
         bpy.utils.unregister_class(c)
 
-
-if __name__ == "__main__":
-    register()
+    del bpy.types.Scene.telarana

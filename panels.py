@@ -42,9 +42,6 @@ class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_SimulateTelarana"
     bl_order = 3
 
-    bpy.types.Scene.BEVEL_DEPTH = bpy.props.IntProperty(
-        name='Thickness', default=3, min=1, step=1, description='Thread thickness in microns')
-
     def draw(self, context):
         layout = self.layout
         scene = context.scene
@@ -56,14 +53,12 @@ class VIEW3D_PT_SimulateTelarana(bpy.types.Panel):
         col.prop(modTelarana.settings, 'shrink_min', text='')
 
         col.label(text="Collisions")
-        col.prop(modTelarana.collision_settings,
-                 'use_collision', text='Enable object collisions')
-        col.prop(modTelarana.collision_settings,
-                 'use_self_collision', text='Enable self collisions')
+        col.prop(modTelarana.collision_settings, 'use_collision', text='Enable object collisions')
+        col.prop(modTelarana.collision_settings, 'use_self_collision', text='Enable self collisions')
 
         row = layout.row()
         row.scale_y = 3
-        op = row.operator("object.run_telarana_functions", text='Apply')
+        op = row.operator("object.telarana_functions", text='Apply')
         op.action = 'APPLY_AND_CONVERT_MESH_TO_CURVE'
 
     @classmethod
@@ -101,22 +96,11 @@ class VIEW3D_PT_TelaranaGeometry(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_GenerateTelarana"
     bl_order = 2
 
-    scene = bpy.types.Scene
 
-    scene.THREAD_COUNT = bpy.props.IntProperty(name='Count', default=50, min=2, max=250, step=1, description='Main thread count')
-    scene.THREAD_STEPS = bpy.props.IntProperty(name='Subdivisions', default=10, min=5, max=50, step=1, description='Main thread subdivisions')
-    scene.THREAD_CONNECTIONS_COUNT = bpy.props.IntProperty(name='Count', default=50, min=2, max=250, step=1, description='Connecthing thread count')
-    scene.THREAD_CONNECTIONS_STEPS = bpy.props.IntProperty(name='Subdivisions', default=10, min=0, max=50, step=1, description='Connecting thread subdivisions')
-    scene.RECURSION_LEVELS = bpy.props.IntProperty(name='Levels', default=10, min=1, max=250, step=1, description='Recursion levels')
-    scene.TEAR_THREADS = bpy.props.BoolProperty(name='Tear threads', default=False)
-    scene.THREAD_TEARING_AMOUNT = bpy.props.FloatProperty(name='Ratio', default=1, min=1, max=10, step=0.1, description='Thread tearing amount')
-    scene.DELETE_ANNOTATION = bpy.props.BoolProperty(name='Delete annotations', default=False)
-    scene.COMBINE_THREADS = bpy.props.BoolProperty(name='Combine threads', default=True)
-    scene.COMBINE_THREADS_THRESHOLD = bpy.props.FloatProperty(name='Threshold', default=0.5, min=0, max=1, step=0.01, description='Combine thread vertices threshold')
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
+        telarana = context.scene.telarana
 
         gpd = context.annotation_data
         if gpd is not None:
@@ -127,41 +111,41 @@ class VIEW3D_PT_TelaranaGeometry(bpy.types.Panel):
                     if len(strokes) >= 2:
                         layout.label(text="Main Threads")
                         row = layout.row(align=True)
-                        row.prop(scene, 'THREAD_COUNT')
-                        row.prop(scene, 'THREAD_STEPS')
+                        row.prop(telarana, 'THREAD_COUNT')
+                        row.prop(telarana, 'THREAD_STEPS')
 
                         layout.separator()
 
                         layout.label(text="Connecting Threads")
                         row = layout.row(align=True)
-                        row.prop(scene, 'THREAD_CONNECTIONS_COUNT')
-                        row.prop(scene, 'THREAD_CONNECTIONS_STEPS')
+                        row.prop(telarana, 'THREAD_CONNECTIONS_COUNT')
+                        row.prop(telarana, 'THREAD_CONNECTIONS_STEPS')
 
                         layout.separator()
 
                         row = layout.row()
-                        row.prop(scene, "RECURSION_LEVELS")
+                        row.prop(telarana, "RECURSION_LEVELS")
 
                         # layout.separator()
 
                         # row = layout.row()
-                        # row.prop(scene, 'TEAR_THREADS', text='Tear threads')
+                        # row.prop(telarana, 'TEAR_THREADS', text='Tear threads')
 
                         # if(scene.TEAR_THREADS):
                         #     row = layout.row()
-                        #     row.prop(scene, 'THREAD_TEARING_AMOUNT')
+                        #     row.prop(telarana, 'THREAD_TEARING_AMOUNT')
 
                         # row = layout.row()
-                        # row.prop(scene, 'COMBINE_THREADS')
+                        # row.prop(telarana, 'COMBINE_THREADS')
 
                         # if(scene.COMBINE_THREADS):
                         #     row = layout.row()
-                        #     row.prop(scene, 'COMBINE_THREADS_THRESHOLD')
+                        #     row.prop(telarana, 'COMBINE_THREADS_THRESHOLD')
 
                         layout.separator()
 
                         row = layout.row()
-                        row.prop(scene, 'DELETE_ANNOTATION',
+                        row.prop(telarana, 'DELETE_ANNOTATION',
                                  text='Clear annotations')
 
                         row = layout.row()
